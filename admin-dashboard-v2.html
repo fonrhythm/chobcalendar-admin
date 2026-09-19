@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chob Calendar 管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 256px;
+            background-color: #fff;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+            position: absolute;
+            z-index: 40;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            text-align: left;
+            color: #4b5563;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .nav-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .nav-item.active {
+            background-color: #dbeafe;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 10px 12px;
+            color: #dc2626;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: left;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: #fee2e2;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            background-color: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .language-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .lang-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .lang-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            min-width: 120px;
+            margin-top: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 50;
+        }
+
+        .lang-dropdown.show {
+            display: block;
+        }
+
+        .lang-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+
+        .lang-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .lang-option.active {
+            background-color: #dbeafe;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* 内容区 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #fff;
+            color: #4b5563;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f9fafb;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* 筛选区 */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* 网格布局（艺人） */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .card-avatar {
+            font-size: 32px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: #2563eb;
+        }
+
+        .icon-btn.delete:hover {
+            color: #dc2626;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* 表格 */
+        .table-container {
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .tag-official {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .tag-fan {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .tag-admin {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tag-partner {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .link-btn {
+            color: #2563eb;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 14px;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .link-btn:hover {
+            color: #1d4ed8;
+        }
+
+        .link-btn.danger {
+            color: #dc2626;
+        }
+
+        .link-btn.danger:hover {
+            color: #b91c1c;
+        }
+
+        /* 列表 */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .task-item.official {
+            border-color: #fcd34d;
+            background-color: #fffbeb;
+        }
+
+        .task-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            font-weight: 600;
+            color: #1f2937;
+            flex: 1;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .task-date {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        /* 权限说明 */
+        .permission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .permission-card {
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid;
+        }
+
+        .permission-card.admin {
+            background-color: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .permission-card.official {
+            background-color: #dbeafe;
+            border-color: #93c5fd;
+        }
+
+        .permission-card.partner {
+            background-color: #dcfce7;
+            border-color: #86efac;
+        }
+
+        .permission-card h4 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .permission-card ul {
+            list-style: none;
+            font-size: 12px;
+        }
+
+        .permission-card li {
+            margin-bottom: 4px;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        .close-btn:hover {
+            color: #4b5563;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 10px 16px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 50vh;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .search-input {
+                min-width: 100%;
+            }
+        }
+
+        .hidden-page {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>Chob</h1>
+                <p>管理后台</p>
+            </div>
+
+            <div class="sidebar-nav">
+                <button class="nav-item active" data-page="artists">👥 艺人管理</button>
+                <button class="nav-item" data-page="events">📅 活动管理</button>
+                <button class="nav-item" data-page="tasks">✓ 事项管理</button>
+                <button class="nav-item" data-page="permissions">🔐 权限管理</button>
+            </div>
+
+            <div class="sidebar-footer">
+                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 12px;">Logged in as: admin@chob.com</div>
+                <button class="logout-btn">🚪 登出</button>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <div class="top-bar">
+                <button class="menu-btn" id="menuBtn">☰</button>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="language-selector">
+                        <button class="lang-btn" id="langBtn">中文 ▼</button>
+                        <div class="lang-dropdown" id="langDropdown">
+                            <button class="lang-option active" data-lang="zh">中文</button>
+                            <button class="lang-option" data-lang="en">English</button>
+                            <button class="lang-option" data-lang="th">ไทย</button>
+                        </div>
+                    </div>
+                    <button style="background: none; border: none; font-size: 20px; cursor: pointer;">⚙️</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- 艺人管理页面 -->
+                <div class="page active" id="page-artists">
+                    <div class="toolbar">
+                        <button class="btn btn-primary" onclick="openModal('artist')">➕ 新增</button>
+                        <button class="btn btn-secondary">⬆️ 导入</button>
+                        <input type="text" class="search-input" placeholder="搜索艺人...">
+                    </div>
+
+                    <div class="filter-bar">
+                        <select style="flex: 1; min-width: 150px;">
+                            <option>-- 所有公司 --</option>
+                            <option>GMMTV</option>
+                            <option>Smallroom</option>
+                            <option>Sony Music Thailand</option>
+                        </select>
+                        <select style="flex: 1; min-width: 150px;">
+                            <option>-- 所有类型 --</option>
+                            <option>泰腐</option>
+                            <option>泰百</option>
+                            <option>乐队</option>
+                            <option>歌手</option>
+                        </select>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-avatar">🎤</div>
+                                <div class="card-actions">
+                                    <button class="icon-btn">✏️</button>
+                                    <button class="icon-btn delete">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="card-title">FirstTouch</div>
+                            <div class="card-subtitle">GMMTV</div>
+                            <span class="badge">泰腐</span>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-avatar">🎤</div>
+                                <div class="card-actions">
+                                    <button class="icon-btn">✏️</button>
+                                    <button class="icon-btn delete">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="card-title">YellowFang</div>
+                            <div class="card-subtitle">GMMTV</div>
+                            <span class="badge">泰腐</span>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-avatar">🎸</div>
+                                <div class="card-actions">
+                                    <button class="icon-btn">✏️</button>
+                                    <button class="icon-btn delete">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="card-title">Tattoo Lover</div>
+                            <div class="card-subtitle">Smallroom</div>
+                            <span class="badge">乐队</span>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-avatar">🎤</div>
+                                <div class="card-actions">
+                                    <button class="icon-btn">✏️</button>
+                                    <button class="icon-btn delete">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="card-title">MaxNat</div>
+                            <div class="card-subtitle">GMMTV</div>
+                            <span class="badge">泰百</span>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-avatar">🎤</div>
+                                <div class="card-actions">
+                                    <button class="icon-btn">✏️</button>
+                                    <button class="icon-btn delete">🗑️</button>
+                                </div>
+                            </div>
+                            <div class="card-title">KengKengkengkeng</div>
+                            <div class="card-subtitle">Sony Music Thailand</div>
+                            <span class="badge">歌手</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 活动管理页面 -->
+                <div class="page" id="page-events">
+                    <div class="toolbar">
+                        <button class="btn btn-primary" onclick="openModal('event')">➕ 新增</button>
+                        <button class="btn btn-secondary">⬆️ 导入</button>
+                        <input type="text" class="search-input" placeholder="搜索活动...">
+                    </div>
+
+                    <div class="filter-bar">
+                        <select>
+                            <option>-- 所有来源 --</option>
+                            <option>官方</option>
+                            <option>粉丝</option>
+                        </select>
+                        <select>
+                            <option>-- 所有类型 --</option>
+                            <option>演出</option>
+                            <option>见面会</option>
+                            <option>剧集宣传</option>
+                            <option>站台活动</option>
+                        </select>
+                        <input type="date">
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>活动名称</th>
+                                    <th>艺人</th>
+                                    <th>日期</th>
+                                    <th>来源</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>⭐</span>
+                                            <span style="border: 1px solid #fcd34d; padding: 2px 6px; border-radius: 4px;">FirstTouch演唱会</span>
+                                        </div>
+                                    </td>
+                                    <td>FirstTouch</td>
+                                    <td>2026-05-15</td>
+                                    <td><span class="tag tag-official">官方</span></td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span>⭐</span>
+                                            <span style="border: 1px solid #fcd34d; padding: 2px 6px; border-radius: 4px;">YellowFang见面会</span>
+                                        </div>
+                                    </td>
+                                    <td>YellowFang</td>
+                                    <td>2026-05-20</td>
+                                    <td><span class="tag tag-official">官方</span></td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        新电视剧宣传
+                                    </td>
+                                    <td>MaxNat</td>
+                                    <td>2026-05-25</td>
+                                    <td><span class="tag tag-fan">粉丝</span></td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        站台活动
+                                    </td>
+                                    <td>KengKengkengkeng</td>
+                                    <td>2026-06-01</td>
+                                    <td><span class="tag tag-fan">粉丝</span></td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 事项管理页面 -->
+                <div class="page" id="page-tasks">
+                    <div class="toolbar">
+                        <button class="btn btn-primary" onclick="openModal('task')">➕ 新增</button>
+                        <button class="btn btn-secondary">⬆️ 导入</button>
+                        <input type="text" class="search-input" placeholder="搜索事项...">
+                    </div>
+
+                    <div class="filter-bar">
+                        <select>
+                            <option>-- 所有类型 --</option>
+                            <option>抢票倒计时</option>
+                            <option>订桌开放</option>
+                            <option>Top Spender购买</option>
+                            <option>开放填表</option>
+                        </select>
+                        <select>
+                            <option>-- 所有来源 --</option>
+                            <option>官方</option>
+                            <option>粉丝</option>
+                        </select>
+                    </div>
+
+                    <div class="task-list">
+                        <div class="task-item official">
+                            <div class="task-header">
+                                <span>⭐</span>
+                                <span class="task-title">FirstTouch 抢票倒计时</span>
+                                <span class="tag tag-official">官方</span>
+                            </div>
+                            <div class="task-meta">
+                                类型: <strong>抢票倒计时</strong> | 艺人: <strong>FirstTouch</strong>
+                            </div>
+                            <div class="task-date">2026-05-01 ~ 2026-05-07</div>
+                            <div style="margin-top: 12px;">
+                                <button class="link-btn">编辑</button>
+                                <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                <button class="link-btn danger">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="task-item official">
+                            <div class="task-header">
+                                <span>⭐</span>
+                                <span class="task-title">Tattoo Lover 酒吧演出开放订桌</span>
+                                <span class="tag tag-official">官方</span>
+                            </div>
+                            <div class="task-meta">
+                                类型: <strong>订桌开放</strong> | 艺人: <strong>Tattoo Lover</strong>
+                            </div>
+                            <div class="task-date">2026-05-10 ~ 2026-05-14</div>
+                            <div style="margin-top: 12px;">
+                                <button class="link-btn">编辑</button>
+                                <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                <button class="link-btn danger">删除</button>
+                            </div>
+                        </div>
+
+                        <div class="task-item">
+                            <div class="task-header">
+                                <span class="task-title">某某活动开放填表</span>
+                                <span class="tag tag-fan">粉丝</span>
+                            </div>
+                            <div class="task-meta">
+                                类型: <strong>开放填表</strong> | 艺人: <strong>YellowFang</strong>
+                            </div>
+                            <div class="task-date">2026-05-20 ~ 2026-05-25</div>
+                            <div style="margin-top: 12px;">
+                                <button class="link-btn">编辑</button>
+                                <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                <button class="link-btn danger">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 权限管理页面 -->
+                <div class="page" id="page-permissions">
+                    <div class="toolbar">
+                        <button class="btn btn-primary" onclick="openModal('user')">➕ 新增用户</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>公司/描述</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>chob_gmmtv@gmail.com</td>
+                                    <td><span class="tag tag-official">官方账号</span></td>
+                                    <td>GMMTV</td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>chob_smallroom@gmail.com</td>
+                                    <td><span class="tag tag-official">官方账号</span></td>
+                                    <td>Smallroom</td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>fan_station_001@gmail.com</td>
+                                    <td><span class="tag tag-partner">合作粉丝</span></td>
+                                    <td>某某站</td>
+                                    <td>
+                                        <button class="link-btn">编辑</button>
+                                        <span style="color: #d1d5db; margin: 0 6px;">|</span>
+                                        <button class="link-btn danger">删除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 32px; padding-top: 32px; border-top: 1px solid #e5e7eb;">
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">权限说明</h3>
+
+                        <div class="permission-grid">
+                            <div class="permission-card admin">
+                                <h4>👨‍💼 管理员</h4>
+                                <ul>
+                                    <li>✅ 管理所有内容（新增、编辑、删除）</li>
+                                    <li>✅ 批量导入</li>
+                                    <li>✅ 用户权限分配</li>
+                                </ul>
+                            </div>
+
+                            <div class="permission-card official">
+                                <h4>⭐ 官方账号</h4>
+                                <ul>
+                                    <li>✅ 新增、编辑、删除自己的内容</li>
+                                    <li>✅ 批量导入</li>
+                                    <li>❌ 删除他人内容</li>
+                                </ul>
+                            </div>
+
+                            <div class="permission-card partner">
+                                <h4>🤝 合作粉丝</h4>
+                                <ul>
+                                    <li>✅ 新增、编辑自己的内容</li>
+                                    <li>❌ 删除内容</li>
+                                    <li>❌ 批量导入</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle"></div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+
+            <form id="modalForm" onsubmit="handleSubmit(event)">
+                <div id="modalBody"></div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentModalType = null;
+
+        // 页面切换
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const page = this.dataset.page;
+                
+                // 更新导航
+                document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                // 更新页面
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById(`page-${page}`).classList.add('active');
+
+                // 关闭侧边栏（移动端）
+                if (window.innerWidth < 768) {
+                    document.getElementById('sidebar').classList.add('hidden');
+                }
+            });
+        });
+
+        // 菜单按钮
+        document.getElementById('menuBtn').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('hidden');
+        });
+
+        // 语言切换
+        document.getElementById('langBtn').addEventListener('click', function() {
+            document.getElementById('langDropdown').classList.toggle('show');
+        });
+
+        document.querySelectorAll('.lang-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const lang = this.dataset.lang;
+                const langText = lang === 'zh' ? '中文' : lang === 'en' ? 'English' : 'ไทย';
+                document.getElementById('langBtn').textContent = langText + ' ▼';
+                document.getElementById('langDropdown').classList.remove('show');
+                document.querySelectorAll('.lang-option').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 模态框打开
+        function openModal(type) {
+            currentModalType = type;
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+
+            const forms = {
+                artist: {
+                    title: '新增艺人',
+                    fields: `
+                        <div class="form-group">
+                            <label>艺人名字 *</label>
+                            <input type="text" placeholder="输入艺人名字" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>公司 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>GMMTV</option>
+                                    <option>Smallroom</option>
+                                    <option>Sony Music Thailand</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>类型 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>泰腐</option>
+                                    <option>泰百</option>
+                                    <option>乐队</option>
+                                    <option>歌手</option>
+                                </select>
+                            </div>
+                        </div>
+                    `
+                },
+                event: {
+                    title: '新增活动',
+                    fields: `
+                        <div class="form-group">
+                            <label>活动名称 *</label>
+                            <input type="text" placeholder="输入活动名称" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>艺人 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>FirstTouch</option>
+                                    <option>YellowFang</option>
+                                    <option>Tattoo Lover</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>日期 *</label>
+                                <input type="date" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>活动类型 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>演出</option>
+                                    <option>见面会</option>
+                                    <option>剧集宣传</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>公司 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>GMMTV</option>
+                                    <option>Smallroom</option>
+                                </select>
+                            </div>
+                        </div>
+                    `
+                },
+                task: {
+                    title: '新增事项',
+                    fields: `
+                        <div class="form-group">
+                            <label>事项标题 *</label>
+                            <input type="text" placeholder="例如: FirstTouch 抢票倒计时" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>事项类型 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>抢票倒计时</option>
+                                    <option>订桌开放</option>
+                                    <option>Top Spender购买</option>
+                                    <option>开放填表</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>相关艺人 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>FirstTouch</option>
+                                    <option>YellowFang</option>
+                                    <option>Tattoo Lover</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>开始日期 *</label>
+                                <input type="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>结束日期 *</label>
+                                <input type="date" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>描述</label>
+                            <textarea placeholder="输入描述"></textarea>
+                        </div>
+                    `
+                },
+                user: {
+                    title: '新增用户',
+                    fields: `
+                        <div class="form-group">
+                            <label>邮箱 *</label>
+                            <input type="email" placeholder="user@example.com" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>角色 *</label>
+                                <select required>
+                                    <option>-- 请选择 --</option>
+                                    <option>管理员</option>
+                                    <option>官方账号</option>
+                                    <option>合作粉丝</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>公司/描述 *</label>
+                                <input type="text" placeholder="GMMTV / 某某站" required>
+                            </div>
+                        </div>
+                    `
+                }
+            };
+
+            const form = forms[type];
+            title.textContent = form.title;
+            body.innerHTML = form.fields;
+
+            modal.classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+            document.getElementById('modalForm').reset();
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            alert('保存成功！');
+            closeModal();
+        }
+
+        // 关闭所有下拉菜单
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.language-selector')) {
+                document.getElementById('langDropdown').classList.remove('show');
+            }
+        });
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                document.getElementById('sidebar').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
